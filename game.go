@@ -1,17 +1,17 @@
 package main
 
 import (
-	"errors"
 	"math/rand"
 )
 
-var errgGameOver = errors.New("game over")
-
 // board capture the runtime state of the game
 type board struct {
-	rows  int
-	cols  int
-	cells [][]cell
+	rows         int
+	cols         int
+	cells        [][]cell
+	state        gameState
+	openedCells  int
+	flaggedCells int
 }
 
 // newBoard initializes and returns a game board.
@@ -91,16 +91,30 @@ func (b *board) init(lvl level) {
 
 // openCell marks the cell as open. When a mine is opened the game ends. When a clear cell is opened it may open more adjoimg cells.
 // When a number cells is opend it just opens and reveals the value of that number
-func (b *board) openCell(row, col int) error {
-	if b.cells[row][col].val.isMine() {
-		return errgGameOver
+func (b *board) openCell(row, col int) {
+	if b.cells[row][col].state == opened {
+		// noop, if cell is already opened
+		return
 	}
+
+	if b.cells[row][col].val.isMine() {
+		b.state = lost
+		return
+	}
+	defer func() {
+		// check if we are done
+		if b.openedCells+b.flaggedCells == b.rows*b.cols {
+			b.state = won
+		}
+	}()
 	if b.cells[row][col].val.isClear() {
 		b.openIsland(row, col)
-		return nil
+
+		return
 	}
 	b.cells[row][col].state = opened
-	return nil
+	b.openedCells++
+	return
 }
 
 // openIsland is called from openCell, when the cell being opened is clear. It performs a BFS to search all adjoinging cells that
@@ -114,6 +128,7 @@ func (b *board) openIsland(row, col int) {
 		c := q[0]
 		q = q[1:]
 		b.cells[c.row][c.col].state = opened
+		b.openedCells++
 		visited[c] = struct{}{}
 		if b.cells[c.row][c.col].val.isNumber() {
 			// stop the search at numbered cells
@@ -141,6 +156,11 @@ func (b *board) openIsland(row, col int) {
 
 // flagCell marks the cell as flagged.
 func (b *board) flagCell(row, col int) {
+	if b.cells[row][col].state == opened {
+		// noop, if cell is already opened
+		return
+	}
+
 	b.cells[row][col].state = flagged
 }
 
@@ -186,4 +206,13 @@ const (
 	closed state = iota
 	opened
 	flagged
+)
+
+// gameState is the current state of the game
+type gameState int
+
+const (
+	playing gameState = iota
+	won
+	lost
 )
