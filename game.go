@@ -65,6 +65,8 @@ func (b *board) init(lvl level) {
 	// setup the numbered cells
 	for row := 0; row < rows; row++ {
 		for col := 0; col < cols; col++ {
+			b.cells[row][col].row = row
+			b.cells[row][col].col = col
 			if b.cells[row][col].val.isMine() {
 				continue
 			}
@@ -96,6 +98,16 @@ func (b *board) openCell(row, col int) {
 		// noop, if cell is already opened
 		return
 	}
+	defer func() {
+		if b.state == lost || b.state == won {
+			// once the game completes, reveal the entire board
+			for row := 0; row < b.rows; row++ {
+				for col := 0; col < b.cols; col++ {
+					b.cells[row][col].state = opened
+				}
+			}
+		}
+	}()
 
 	if b.cells[row][col].val.isMine() {
 		b.state = lost
@@ -175,8 +187,9 @@ const (
 
 // cell is a single cell on the board
 type cell struct {
-	val   value
-	state state
+	val      value
+	state    state
+	row, col int // used to render the html table template
 }
 
 // value is the value of cell initialized when board is setup
