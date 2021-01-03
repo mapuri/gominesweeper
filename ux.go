@@ -64,7 +64,7 @@ var boardTemplate = `
 	<tr>
 		<td colspan={{.Cols}}>
 			<div id=statusLine>
-				<div class=statusInner sty> <p id=gameStatus style='font-weight: bold;'> Game in progress </p> </div>
+				<div class=statusInner> <p id=gameStatus style='font-weight: bold;'>Left click to open a cell. Right click to flag a cell. </p> </div>
 				<div class=statusInner> <button id=restartGame onclick=resetGame() disabled> Play Again </button> </div>
 			</div>
 		</td>
