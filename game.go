@@ -2,48 +2,53 @@ package main
 
 import (
 	"math/rand"
+	"time"
 )
 
-// board capture the runtime state of the game
-type board struct {
-	rows         int
-	cols         int
-	cells        [][]cell
-	state        gameState
+// Board capture the runtime state of the game
+type Board struct {
+	Rows  int
+	Cols  int
+	Cells [][]Cell
+	State GameState
+
+	minedCells   int
 	openedCells  int
 	flaggedCells int
 }
 
-// newBoard initializes and returns a game board.
-func newBoard(lvl level) *board {
-	b := &board{}
+// NewBoard initializes and returns a game board.
+func NewBoard(lvl Level) *Board {
+	b := &Board{}
 	b.init(lvl)
 	return b
 }
 
 // init initializes a board based on user specified difficulty
-func (b *board) init(lvl level) {
+func (b *Board) init(lvl Level) {
 	rows := 6
 	cols := 6
 	numMines := 6
 	switch lvl {
-	case medium:
+	case Medium:
 		rows = 10
 		cols = 10
 		numMines = 10
-	case hard:
+	case Hard:
 		rows = 20
 		cols = 20
 		numMines = 20
 	}
-	b.rows = rows
-	b.cols = cols
-	b.cells = make([][]cell, rows)
+	b.Rows = rows
+	b.Cols = cols
+	b.minedCells = numMines
+	b.Cells = make([][]Cell, rows)
 	for i := 0; i < rows; i++ {
-		b.cells[i] = make([]cell, cols)
+		b.Cells[i] = make([]Cell, cols)
 	}
 
 	// randomly pick the cells with mines
+	rand.Seed(int64(time.Now().Nanosecond()))
 	mineCells := make(map[int]struct{ row, col int })
 	for len(mineCells) < numMines {
 		key := rand.Intn(rows * cols)
@@ -59,15 +64,15 @@ func (b *board) init(lvl level) {
 	for _, cell := range mineCells {
 		row := cell.row
 		col := cell.col
-		b.cells[row][col].val = mine
+		b.Cells[row][col].Val = Mine
 	}
 
 	// setup the numbered cells
 	for row := 0; row < rows; row++ {
 		for col := 0; col < cols; col++ {
-			b.cells[row][col].row = row
-			b.cells[row][col].col = col
-			if b.cells[row][col].val.isMine() {
+			b.Cells[row][col].Row = row
+			b.Cells[row][col].Col = col
+			if b.Cells[row][col].Val.IsMine() {
 				continue
 			}
 			neighs := []struct{ row, col int }{
@@ -80,69 +85,70 @@ func (b *board) init(lvl level) {
 				if neigh.row < 0 || neigh.row >= rows || neigh.col < 0 || neigh.col >= cols {
 					continue
 				}
-				if b.cells[neigh.row][neigh.col].val.isMine() {
+				if b.Cells[neigh.row][neigh.col].Val.IsMine() {
 					numMines++
 				}
 			}
 			if numMines > 0 {
-				b.cells[row][col].val = value(numMines)
+				b.Cells[row][col].Val = Value(numMines)
 			}
 		}
 	}
 }
 
-// openCell marks the cell as open. When a mine is opened the game ends. When a clear cell is opened it may open more adjoimg cells.
+// OpenCell marks the cell as open. When a mine is opened the game ends. When a clear cell is opened it may open more adjoimg cells.
 // When a number cells is opend it just opens and reveals the value of that number
-func (b *board) openCell(row, col int) {
-	if b.cells[row][col].state == opened {
+func (b *Board) OpenCell(row, col int) {
+	if b.Cells[row][col].State == Opened {
 		// noop, if cell is already opened
 		return
 	}
 	defer func() {
-		if b.state == lost || b.state == won {
+		if b.State == Lost || b.State == Won {
 			// once the game completes, reveal the entire board
-			for row := 0; row < b.rows; row++ {
-				for col := 0; col < b.cols; col++ {
-					b.cells[row][col].state = opened
+			for row := 0; row < b.Rows; row++ {
+				for col := 0; col < b.Cols; col++ {
+					b.Cells[row][col].State = Opened
 				}
 			}
 		}
 	}()
 
-	if b.cells[row][col].val.isMine() {
-		b.state = lost
+	if b.Cells[row][col].Val.IsMine() {
+		b.State = Lost
 		return
 	}
 	defer func() {
 		// check if we are done
-		if b.openedCells+b.flaggedCells == b.rows*b.cols {
-			b.state = won
+		if b.flaggedCells == b.minedCells && b.openedCells+b.flaggedCells == b.Rows*b.Cols {
+			b.State = Won
 		}
 	}()
-	if b.cells[row][col].val.isClear() {
+	if b.Cells[row][col].Val.IsClear() {
 		b.openIsland(row, col)
 
 		return
 	}
-	b.cells[row][col].state = opened
+	b.Cells[row][col].State = Opened
 	b.openedCells++
 	return
 }
 
 // openIsland is called from openCell, when the cell being opened is clear. It performs a BFS to search all adjoinging cells that
 // are either clear or numbered
-func (b *board) openIsland(row, col int) {
+func (b *Board) openIsland(row, col int) {
 	type cell struct{ row, col int }
-	visited := make(map[cell]struct{})
+	queued := make(map[cell]struct{})
 	q := make([]cell, 0)
-	q = append(q, cell{row, col})
+	c := cell{row, col}
+	q = append(q, c)
+	queued[c] = struct{}{}
 	for len(q) > 0 {
 		c := q[0]
 		q = q[1:]
-		b.cells[c.row][c.col].state = opened
+		b.Cells[c.row][c.col].State = Opened
 		b.openedCells++
-		visited[c] = struct{}{}
-		if b.cells[c.row][c.col].val.isNumber() {
+		if b.Cells[c.row][c.col].Val.IsNumber() {
 			// stop the search at numbered cells
 			continue
 		}
@@ -152,80 +158,108 @@ func (b *board) openIsland(row, col int) {
 			{c.row + 1, c.col - 1}, {c.row + 1, c.col}, {c.row + 1, c.col + 1},
 		}
 		for _, neigh := range neighs {
-			if neigh.row < 0 || neigh.row >= b.rows || neigh.col < 0 || neigh.col >= b.cols {
+			if neigh.row < 0 || neigh.row >= b.Rows || neigh.col < 0 || neigh.col >= b.Cols {
 				continue
 			}
-			if _, ok := visited[neigh]; ok {
+			if _, ok := queued[neigh]; ok {
 				continue
 			}
-			if !b.cells[neigh.row][neigh.col].val.isMine() {
+			if !b.Cells[neigh.row][neigh.col].Val.IsMine() {
 				// only add numbered and clear cells to queue
 				q = append(q, neigh)
+				queued[neigh] = struct{}{}
 			}
 		}
 	}
 }
 
-// flagCell marks the cell as flagged.
-func (b *board) flagCell(row, col int) {
-	if b.cells[row][col].state == opened {
+// FlagCell marks the cell as flagged.
+func (b *Board) FlagCell(row, col int) {
+	if b.Cells[row][col].State == Opened {
 		// noop, if cell is already opened
 		return
 	}
 
-	b.cells[row][col].state = flagged
+	if b.Cells[row][col].State == Closed {
+		b.Cells[row][col].State = Flagged
+		b.flaggedCells++
+	} else {
+		b.Cells[row][col].State = Closed
+		b.flaggedCells--
+	}
 }
 
-// level is the game level as selected by the user
-type level int
+// Level is the game Level as selected by the user
+type Level int
 
 const (
-	easy level = iota
-	medium
-	hard
+	// Easy is a easy game level
+	Easy Level = iota
+
+	// Medium is a medium game level
+	Medium
+
+	// Hard is hard game level
+	Hard
 )
 
-// cell is a single cell on the board
-type cell struct {
-	val      value
-	state    state
-	row, col int // used to render the html table template
+// Cell is a single Cell on the board
+type Cell struct {
+	Val      Value
+	State    State
+	Row, Col int // used to render the html table template
 }
 
-// value is the value of cell initialized when board is setup
-type value int
+// Value is the Value of cell initialized when board is setup
+type Value int
 
 const (
-	clear = 0
-	mine  = 9
+	// Clear denotes a cell that is empty
+	Clear = 0
+
+	//Mine denotes a cell that contains a mine
+	Mine = 9
 )
 
-func (v value) isMine() bool {
-	return v == mine
+// IsMine returns true if cell contains a mine
+func (v Value) IsMine() bool {
+	return v == Mine
 }
 
-func (v value) isClear() bool {
-	return v == clear
+// IsClear returns true if cell is empty
+func (v Value) IsClear() bool {
+	return v == Clear
 }
 
-func (v value) isNumber() bool {
-	return v != clear && v != mine
+// IsNumber returns true is cell is a empty cell that is surrounded by 1 or more mines
+func (v Value) IsNumber() bool {
+	return v != Clear && v != Mine
 }
 
-// state is the runtime state of the cell. It can change by user actions.
-type state int
+// State is the runtime State of the cell. It can change by user actions.
+type State int
 
 const (
-	closed state = iota
-	opened
-	flagged
+	// Closed denotes a closed cell
+	Closed State = iota
+
+	// Opened denotes a cell that has been opened
+	Opened
+
+	// Flagged denotes a cell that has been flagged
+	Flagged
 )
 
-// gameState is the current state of the game
-type gameState int
+// GameState is the current state of the game
+type GameState int
 
 const (
-	playing gameState = iota
-	won
-	lost
+	// Playing denotes a game in progress
+	Playing GameState = iota
+
+	// Won denotes a game that has been won
+	Won
+
+	// Lost denotes a game that has been lost
+	Lost
 )
