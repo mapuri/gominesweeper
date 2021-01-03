@@ -28,17 +28,16 @@ func NewBoard(lvl Level) *Board {
 func (b *Board) init(lvl Level) {
 	rows := 6
 	cols := 6
-	numMines := 6
 	switch lvl {
 	case Medium:
 		rows = 10
 		cols = 10
-		numMines = 10
 	case Hard:
 		rows = 20
 		cols = 20
-		numMines = 20
 	}
+	// let's place mines in 20% of the cells
+	numMines := int(0.2 * float64(rows) * float64(cols))
 	b.Rows = rows
 	b.Cols = cols
 	b.minedCells = numMines
@@ -70,8 +69,6 @@ func (b *Board) init(lvl Level) {
 	// setup the numbered cells
 	for row := 0; row < rows; row++ {
 		for col := 0; col < cols; col++ {
-			b.Cells[row][col].Row = row
-			b.Cells[row][col].Col = col
 			if b.Cells[row][col].Val.IsMine() {
 				continue
 			}
@@ -205,9 +202,8 @@ const (
 
 // Cell is a single Cell on the board
 type Cell struct {
-	Val      Value
-	State    State
-	Row, Col int // used to render the html table template
+	Val   Value
+	State State
 }
 
 // Value is the Value of cell initialized when board is setup

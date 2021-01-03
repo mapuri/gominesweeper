@@ -15,8 +15,6 @@ var boardTemplate = `
 #board {
 	margin-left: auto;
 	margin-right: auto;
-	table-layout: fixed;
-	widht: 100px;
 }
 #tableHeader {
 	background-color: tomato;
@@ -24,23 +22,33 @@ var boardTemplate = `
 	  padding: 10px;
 	  text-align: center;
 }
+#statusLine {
+	width:100%;
+	text-align: right;
+}
+.statusInner {
+	display: inline-block;
+}
 .closedCell {
 	background-color: darkseagreen;
 	color: black;
-	padding: 10px;
 	text-align: center;
+	width: 30px;
+	height: 30px;
 }
 .openedCell {
 	background-color: lightseagreen;
 	color: black;
-	padding: 10px;
 	text-align: center;
+	width: 30px;
+	height: 30px;
 }
 .flaggedCell {
 	background-color: lightpink;
 	color: black;
-	padding: 10px;
 	text-align: center;
+	width: 30px;
+	height: 30px;
 }
 </style>
 <table id=board>
@@ -55,16 +63,16 @@ var boardTemplate = `
 	</tr>
 	<tr>
 		<td colspan={{.Cols}}>
-			<p id=gameStatus></p>
-		</td>
-		<td colspan={{.Cols}}>
-			<button id=restartGame onclick=resetGame() disabled> Play Again </button>
+			<div id=statusLine>
+				<div class=statusInner sty> <p id=gameStatus style='font-weight: bold;'> Game in progress </p> </div>
+				<div class=statusInner> <button id=restartGame onclick=resetGame() disabled> Play Again </button> </div>
+			</div>
 		</td>
 	</tr>
-	{{ range .Cells }}
+	{{ range $row, $cells := .Cells }}
 	<tr>
-	{{ range .}}
-	<td class=closedCell id="cell{{.Row}}-{{.Col}}" onclick="openCell( {{.Row}}, {{.Col}} )" oncontextmenu="event.preventDefault(); flagCell( {{.Row}}, {{.Col}} )"></td>
+	{{ range $col, $cell := $cells}}
+	<td class=closedCell id="cell{{$row}}-{{$col}}" onclick="openCell( {{$row}}, {{$col}} )" oncontextmenu="event.preventDefault(); flagCell( {{$row}}, {{$col}} )"></td>
 	{{ end}}
 	</tr>
 	{{ end }}
