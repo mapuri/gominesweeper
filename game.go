@@ -100,30 +100,14 @@ func (b *Board) OpenCell(row, col int) {
 		// noop, if cell is already opened
 		return
 	}
-	defer func() {
-		if b.State == Lost || b.State == Won {
-			// once the game completes, reveal the entire board
-			for row := 0; row < b.Rows; row++ {
-				for col := 0; col < b.Cols; col++ {
-					b.Cells[row][col].State = Opened
-				}
-			}
-		}
-	}()
+	defer b.checkDone()
 
 	if b.Cells[row][col].Val.IsMine() {
 		b.State = Lost
 		return
 	}
-	defer func() {
-		// check if we are done
-		if b.flaggedCells == b.minedCells && b.openedCells+b.flaggedCells == b.Rows*b.Cols {
-			b.State = Won
-		}
-	}()
 	if b.Cells[row][col].Val.IsClear() {
 		b.openIsland(row, col)
-
 		return
 	}
 	b.Cells[row][col].State = Opened
@@ -170,13 +154,27 @@ func (b *Board) openIsland(row, col int) {
 	}
 }
 
+func (b *Board) checkDone() {
+	if b.flaggedCells == b.minedCells && b.openedCells+b.flaggedCells == b.Rows*b.Cols {
+		b.State = Won
+	}
+	if b.State == Lost || b.State == Won {
+		// once the game completes, reveal the entire board
+		for row := 0; row < b.Rows; row++ {
+			for col := 0; col < b.Cols; col++ {
+				b.Cells[row][col].State = Opened
+			}
+		}
+	}
+}
+
 // FlagCell marks the cell as flagged.
 func (b *Board) FlagCell(row, col int) {
 	if b.Cells[row][col].State == Opened {
 		// noop, if cell is already opened
 		return
 	}
-
+	defer b.checkDone()
 	if b.Cells[row][col].State == Closed {
 		b.Cells[row][col].State = Flagged
 		b.flaggedCells++

@@ -123,16 +123,7 @@ func openCell(this js.Value, args []js.Value) interface{} {
 	rVal := args[0].Int()
 	cVal := args[1].Int()
 	singleton.OpenCell(rVal, cVal)
-	document := js.Global().Get("document")
-	switch singleton.State {
-	case Won:
-		document.Call("getElementById", "gameStatus").Set("innerHTML", "Yay, you won!")
-		document.Call("getElementById", "restartGame").Set("disabled", false)
-	case Lost:
-		document.Call("getElementById", "gameStatus").Set("innerHTML", "Sorry, you lost!")
-		document.Call("getElementById", "restartGame").Set("disabled", false)
-	}
-	drawBoard(singleton)
+	checkDoneAndDrawBoard(singleton)
 	return nil
 }
 
@@ -141,8 +132,21 @@ func flagCell(this js.Value, args []js.Value) interface{} {
 	rVal := args[0].Int()
 	cVal := args[1].Int()
 	singleton.FlagCell(rVal, cVal)
-	drawBoard(singleton)
+	checkDoneAndDrawBoard(singleton)
 	return nil
+}
+
+func checkDoneAndDrawBoard(b *Board) {
+	document := js.Global().Get("document")
+	switch b.State {
+	case Won:
+		document.Call("getElementById", "gameStatus").Set("innerHTML", "Yay, you won!")
+		document.Call("getElementById", "restartGame").Set("disabled", false)
+	case Lost:
+		document.Call("getElementById", "gameStatus").Set("innerHTML", "Sorry, you lost!")
+		document.Call("getElementById", "restartGame").Set("disabled", false)
+	}
+	drawBoard(b)
 }
 
 // drawBoard redraws the board
