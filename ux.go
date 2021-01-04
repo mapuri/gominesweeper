@@ -15,6 +15,7 @@ var boardTemplate = `
 #board {
 	margin-left: auto;
 	margin-right: auto;
+	table-layout: fixed;
 }
 #tableHeader {
 	background-color: tomato;
@@ -62,11 +63,13 @@ var boardTemplate = `
 		</th>
 	</tr>
 	<tr>
-		<td colspan={{.Cols}}>
-			<div id=statusLine>
-				<div class=statusInner> <p id=gameStatus style='font-weight: bold;'>Left click to open a cell. Right click to flag a cell. </p> </div>
-				<div class=statusInner> <button id=restartGame onclick=resetGame() disabled> Play Again </button> </div>
-			</div>
+		<td colspan={{.Cols}} align=left>
+			<p id=gameStatus style='font-weight: bold;'>Left click to open a cell. Right click to flag a cell. </p>
+		</td>
+	</tr>
+	<tr>
+		<td colspan={{.Cols}} align=right>
+			<button id=restartGame onclick=resetGame() disabled> Play Again </button>
 		</td>
 	</tr>
 	{{ range $row, $cells := .Cells }}
