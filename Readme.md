@@ -1,6 +1,8 @@
 # Overview
 
-gominesweeper is a fun project that implements [minesweeper](https://en.wikipedia.org/wiki/Minesweeper_(video_game)) using Golang + WASM
+gominesweeper is a fun project of mine that implements [minesweeper](https://en.wikipedia.org/wiki/Minesweeper_(video_game)) using Golang + WASM
+
+![gomineseeper in action](/snapshots/sc1.png?raw=true "gomineseeper in action")
 
 # Prerequisite
 - Golang 1.15
